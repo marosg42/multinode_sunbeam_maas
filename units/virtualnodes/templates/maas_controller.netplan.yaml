@@ -1,0 +1,25 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    virtio-nic:
+      match:
+        macaddress: ${mac_address1}
+      addresses:
+        - ${ip_address1}/24
+      routes:
+        - to: 0.0.0.0/0
+          via: 172.16.0.1
+      nameservers:
+        addresses:
+          - ${dns_server}
+    virtio-nic-2:
+      match:
+        macaddress: ${mac_address2}
+      addresses:
+        - ${ip_address2}/24
+    virtio-nic-3:
+      match:
+        macaddress: ${mac_address3}
+      addresses:
+        - ${ip_address3}/24
