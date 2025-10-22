@@ -1,12 +1,9 @@
-# Testflinger Testing
+# Multinode Sunbeam MAAS Testing with Testflinger
 
-## TODO
-
-* [ ] Expose a knob to turn on/off the log level of terragrunt/terraform.
-
+This is a copy from freyes PR and some modifications. Focus is to run with testflinger using CLI.
 
 ## Known Issues
 
-* When a libvirt instance does PXE boot, there could be situations where it
-  doesn't boot and it just times out, making the whole deployment timeout or
-  fail when terraform's apply times out.
+* commissioning works but deploy ends in reboot stage
+* second NICs are not connected to external-space but rather new spaces are created
+* comments are not modified, they are wrong now
