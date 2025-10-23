@@ -18,39 +18,19 @@ provider "libvirt" {
 
 #### Locals
 locals {
-  maas_controller_ip_addr1 = "172.16.0.2"
   maas_controller_ip_addr2 = "172.16.1.2"
   maas_controller_ip_addr3 = "172.16.2.2"
-  nat_net_addresses       = ["172.16.0.0/24"]
   generic_net_addresses   = ["172.16.1.0/24"]
   external_net_addresses  = ["172.16.2.0/24"]
 }
 
 #### Networks
 
-resource "libvirt_network" "nat_net" {
-  name = "nat_net"
-  mode = "nat"
-  autostart = true
-
-  domain = var.nat_net_domain
-  addresses = local.nat_net_addresses
-
-  # dns {
-  #   enabled = false
-  # }
-  # dhcp {
-  #   enabled = false
-  # }
-}
-
 resource "libvirt_network" "generic_net" {
-  name = "generic_net"
-  mode = "none"
+  name      = "generic_net"
+  mode      = "bridge"
+  bridge    = "vlan101br"
   autostart = true
-
-  domain = var.generic_net_domain
-  addresses = local.generic_net_addresses
 
   dns {
     enabled = false
@@ -61,12 +41,10 @@ resource "libvirt_network" "generic_net" {
 }
 
 resource "libvirt_network" "external_net" {
-  name = "external_net"
-  mode = "none"
+  name      = "external_net"
+  mode      = "bridge"
+  bridge    = "vlan102br"
   autostart = true
-
-  domain = var.external_net_domain
-  addresses = local.external_net_addresses
 
   dns {
     enabled = false
@@ -131,9 +109,7 @@ resource "libvirt_cloudinit_disk" "maas_controller_cloudinit" {
   network_config = templatefile(
     "${path.module}/templates/maas_controller.netplan.yaml",
     {
-      dns_server  = var.upstream_dns_server
-      ip_address1  = local.maas_controller_ip_addr1
-      mac_address1 = var.maas_controller_mac_address1
+      dns_server   = var.upstream_dns_server
       ip_address2  = local.maas_controller_ip_addr2
       mac_address2 = var.maas_controller_mac_address2
       ip_address3  = local.maas_controller_ip_addr3
@@ -152,11 +128,6 @@ resource "libvirt_domain" "maas_controller" {
   cloudinit = libvirt_cloudinit_disk.maas_controller_cloudinit.id
   boot_device {
     dev = [ "hd"]
-  }
-  network_interface {
-    network_id     = libvirt_network.nat_net.id
-    hostname       = var.maas_hostname
-    mac            = var.maas_controller_mac_address1
   }
   network_interface {
     network_id     = libvirt_network.generic_net.id
@@ -189,7 +160,7 @@ resource "libvirt_domain" "maas_controller" {
     type        = "ssh"
     user        = "ubuntu"
     private_key = file(var.ssh_private_key_path)
-    host        = local.maas_controller_ip_addr1
+    host        = local.maas_controller_ip_addr2
   }
 
   provisioner "remote-exec" {
@@ -254,8 +225,8 @@ data "external" "remote_command" {
     # Block until the api.key file shows up
     API_KEY_FILE=/tmp/maas-api.key
     # Add host key to known_hosts to avoid interactive prompt
-    ssh-keyscan -H ${local.maas_controller_ip_addr1} >> ~/.ssh/known_hosts 2>/dev/null
-    ssh -i ${var.ssh_private_key_path} ubuntu@${local.maas_controller_ip_addr1} 'touch /home/ubuntu/api.key; until [ -s /home/ubuntu/api.key ]; do sleep 5;done; cat /home/ubuntu/api.key' > $API_KEY_FILE
+    ssh-keyscan -H ${local.maas_controller_ip_addr2} >> ~/.ssh/known_hosts 2>/dev/null
+    ssh -i ${var.ssh_private_key_path} ubuntu@${local.maas_controller_ip_addr2} 'touch /home/ubuntu/api.key; until [ -s /home/ubuntu/api.key ]; do sleep 5;done; cat /home/ubuntu/api.key' > $API_KEY_FILE
     cat $API_KEY_FILE  2>&1 | jq -R '{apikey: .}'  2>&1
   EOF
   ]

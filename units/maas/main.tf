@@ -105,56 +105,12 @@ data "maas_rack_controller" "primary" {
   hostname = var.maas_hostname
 }
 
-resource "maas_space" "space_nat" {
-  name = "space-nat"
-}
-
 resource "maas_space" "space_external" {
   name = "space-external"
 }
 
 resource "maas_space" "space_generic" {
   name = "space-generic"
-}
-
-# Fabric for nat_net (172.16.0.0/24) - discovered by MAAS
-data "maas_subnet" "nat_subnet" {
-  cidr = "172.16.0.0/24"
-}
-
-import {
-  to = maas_fabric.nat_fabric
-  id = "${data.maas_subnet.nat_subnet.fabric}"
-}
-
-resource "maas_fabric" "nat_fabric" {
-  name = "fabric-nat"
-}
-
-# VLAN for nat_net
-import {
-  to = maas_vlan.nat_vlan
-  id = "${data.maas_subnet.nat_subnet.fabric}:0"
-}
-
-resource "maas_vlan" "nat_vlan" {
-  fabric = maas_fabric.nat_fabric.id
-  vid    = 0
-  name   = "untagged"
-  space  = maas_space.space_nat.name
-}
-
-# Subnet for nat_net
-import {
-  to = maas_subnet.nat_subnet
-  id = "${data.maas_subnet.nat_subnet.cidr}"
-}
-
-resource "maas_subnet" "nat_subnet" {
-  name   = "172.16.0.0/24"
-  cidr   = "172.16.0.0/24"
-  fabric = maas_fabric.nat_fabric.id
-  vlan   = maas_vlan.nat_vlan.vid
 }
 
 # Fabric for generic_net (172.16.1.0/24) - discovered by MAAS
@@ -191,10 +147,12 @@ import {
 }
 
 resource "maas_subnet" "generic_subnet" {
-  name   = local.generic_net_addresses[0]
-  cidr   = local.generic_net_addresses[0]
-  fabric = maas_fabric.generic_fabric.id
-  vlan   = maas_vlan.generic_vlan.vid
+  name       = local.generic_net_addresses[0]
+  cidr       = local.generic_net_addresses[0]
+  fabric     = maas_fabric.generic_fabric.id
+  vlan       = maas_vlan.generic_vlan.vid
+  gateway_ip = "172.16.1.1"
+  dns_servers = [var.upstream_dns_server]
 }
 
 # Fabric for external_net (172.16.2.0/24) - discovered by MAAS
@@ -231,10 +189,12 @@ import {
 }
 
 resource "maas_subnet" "external_subnet" {
-  name   = local.external_net_addresses[0]
-  cidr   = local.external_net_addresses[0]
-  fabric = maas_fabric.external_fabric.id
-  vlan   = maas_vlan.external_vlan.vid
+  name       = local.external_net_addresses[0]
+  cidr       = local.external_net_addresses[0]
+  fabric     = maas_fabric.external_fabric.id
+  vlan       = maas_vlan.external_vlan.vid
+  gateway_ip = "172.16.2.1"
+  dns_servers = [var.upstream_dns_server]
 }
 
 resource "maas_subnet_ip_range" "generic_subnet_dhcp_range" {
