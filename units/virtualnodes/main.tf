@@ -123,7 +123,6 @@ resource "libvirt_domain" "maas_controller" {
   vcpu    = var.maas_controller_vcpu
   disk {
     volume_id = libvirt_volume.maas_controller_vol.id
-    scsi      = "true"
   }
   cloudinit = libvirt_cloudinit_disk.maas_controller_cloudinit.id
   boot_device {
@@ -181,14 +180,12 @@ resource "libvirt_domain" "node" {
   running = false
   disk {
     volume_id = libvirt_volume.node_vol[count.index].id
-    scsi      = "true"
   }
   disk {
     volume_id = libvirt_volume.node_vol_secondary[count.index].id
-    scsi      = "true"
   }
   boot_device {
-    dev = [ "network"]
+    dev = [ "network", "hd"]
   }
   network_interface {
     network_id     = libvirt_network.generic_net.id
