@@ -5,6 +5,12 @@ locals {
   generic_dhcp_end = cidrhost(local.generic_net_addresses[0], 254)
   generic_reserved_start = cidrhost(local.generic_net_addresses[0], 1)
   generic_reserved_end = cidrhost(local.generic_net_addresses[0], 5)
+
+  # Reserved IP ranges for OpenStack APIs
+  internal_api_start = "172.16.1.10"
+  internal_api_end = "172.16.1.29"
+  public_api_start = "172.16.1.30"
+  public_api_end = "172.16.1.49"
 }
 
 resource "maas_configuration" "kernel_opts" {
@@ -211,6 +217,22 @@ resource "maas_subnet_ip_range" "generic_subnet_reserved_range" {
   type     = "reserved"
 }
 
+resource "maas_subnet_ip_range" "internal_api_range" {
+  subnet   = maas_subnet.generic_subnet.id
+  start_ip = local.internal_api_start
+  end_ip   = local.internal_api_end
+  type     = "reserved"
+  comment  = "mymaas-internal-api"
+}
+
+resource "maas_subnet_ip_range" "public_api_range" {
+  subnet   = maas_subnet.generic_subnet.id
+  start_ip = local.public_api_start
+  end_ip   = local.public_api_end
+  type     = "reserved"
+  comment  = "mymaas-public-api"
+}
+
 resource "maas_vlan_dhcp" "generic_vlan_dhcp" {
   fabric                  = maas_fabric.generic_fabric.id
   vlan                    = maas_vlan.generic_vlan.vid
@@ -224,7 +246,6 @@ resource "time_sleep" "wait_60_seconds" {
   create_duration = "60s"
 }
 
-
 resource "maas_machine" "node" {
   depends_on = [time_sleep.wait_60_seconds]
   count = length(var.nodes)
@@ -235,4 +256,108 @@ resource "maas_machine" "node" {
     power_id      = var.nodes[count.index].name
   })
   pxe_mac_address = var.nodes[count.index].mac_address
+}
+
+# MAAS Machine Tags
+resource "maas_tag" "compute" {
+  name     = "compute"
+  comment  = "Compute nodes for OpenStack"
+  machines = [
+    maas_machine.node[3].id,
+    maas_machine.node[4].id,
+    maas_machine.node[5].id
+  ]
+}
+
+resource "maas_tag" "storage" {
+  name     = "storage"
+  comment  = "Storage nodes for OpenStack"
+  machines = [
+    maas_machine.node[3].id,
+    maas_machine.node[4].id,
+    maas_machine.node[5].id
+  ]
+}
+
+resource "maas_tag" "control" {
+  name     = "control"
+  comment  = "Control plane nodes for OpenStack"
+  machines = [maas_machine.node[2].id]
+}
+
+resource "maas_tag" "sunbeam" {
+  name     = "sunbeam"
+  comment  = "Sunbeam deployment nodes"
+  machines = [maas_machine.node[1].id]
+}
+
+resource "maas_tag" "juju_controller" {
+  name     = "juju-controller"
+  comment  = "Juju controller nodes"
+  machines = [maas_machine.node[0].id]
+}
+
+resource "maas_tag" "openstack_mymaas" {
+  name     = "openstack-mymaas"
+  comment  = "Nodes managed by mymaas OpenStack deployment"
+  machines = [
+    maas_machine.node[0].id,
+    maas_machine.node[1].id,
+    maas_machine.node[2].id,
+    maas_machine.node[3].id,
+    maas_machine.node[4].id,
+    maas_machine.node[5].id
+  ]
+}
+
+# Tag block devices for Ceph storage
+resource "null_resource" "tag_ceph_disks" {
+  count = 3
+  depends_on = [maas_machine.node]
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = file(var.ssh_private_key_path)
+    host        = var.maas_controller_ip_address
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "#!/bin/bash",
+      "set -e",
+      "# Get the block device ID for /dev/vdb",
+      "BLOCK_DEVICE_ID=$(maas admin block-devices read ${maas_machine.node[count.index + 3].id} | jq -r '.[] | select(.name == \"vdb\") | .id')",
+      "# Tag the block device with 'ceph'",
+      "if [ -n \"$BLOCK_DEVICE_ID\" ]; then",
+      "  maas admin block-device add-tag ${maas_machine.node[count.index + 3].id} $BLOCK_DEVICE_ID tag=ceph",
+      "fi"
+    ]
+  }
+}
+
+# Tag network interfaces for Neutron
+resource "null_resource" "tag_neutron_interfaces" {
+  count = 3
+  depends_on = [maas_machine.node]
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = file(var.ssh_private_key_path)
+    host        = var.maas_controller_ip_address
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "#!/bin/bash",
+      "set -e",
+      "# Get the network interface ID for ens4",
+      "INTERFACE_ID=$(maas admin interfaces read ${maas_machine.node[count.index + 3].id} | jq -r '.[] | select(.name == \"ens4\") | .id')",
+      "# Tag the network interface with 'neutron:physnet1'",
+      "if [ -n \"$INTERFACE_ID\" ]; then",
+      "  maas admin interface add-tag ${maas_machine.node[count.index + 3].id} $INTERFACE_ID tag=neutron:physnet1",
+      "fi"
+    ]
+  }
 }

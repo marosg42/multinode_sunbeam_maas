@@ -9,6 +9,10 @@ terraform {
       source = "hashicorp/external"
       version = "2.3.5"
     }
+    local = {
+      source = "hashicorp/local"
+      version = "2.5.2"
+    }
   }
 }
 
@@ -227,4 +231,13 @@ data "external" "remote_command" {
     cat $API_KEY_FILE  2>&1 | jq -R '{apikey: .}'  2>&1
   EOF
   ]
+}
+
+resource "local_file" "maas_api_key" {
+  depends_on = [
+    data.external.remote_command
+  ]
+  content  = data.external.remote_command.result.apikey
+  filename = pathexpand("~/api.key")
+  file_permission = "0600"
 }

@@ -6,4 +6,4 @@ pushd $SCRIPT_DIR
 
 # export TERRAGRUNT_LOG_LEVEL=trace
 # export TF_LOG=TRACE
-#terragrunt --non-interactive run-all apply
+terragrunt --non-interactive run-all apply
