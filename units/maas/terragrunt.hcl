@@ -39,9 +39,9 @@ inputs = merge(
     maas_api_key = dependency.virtualnodes.outputs.maas_api_key
     maas_controller_ip_address = dependency.virtualnodes.outputs.maas_controller_ip_address
     nodes = dependency.virtualnodes.outputs.nodes
-    # TODO(freyes): make `172.16.0.1` dynamic, it's the gateway of the nat_net
+    # TODO(freyes): make `172.16.1.1` dynamic, it's the gateway of the generic_net
     # network created by libvirt, so this should be an output of the
     # virtualnodes' unit.
-    libvirt_uri = format("qemu+ssh://%s@%s/system", get_env("USER"), "172.16.0.1")
+    libvirt_uri = format("qemu+ssh://%s@%s/system", get_env("USER"), "172.16.1.1")
   }
 )

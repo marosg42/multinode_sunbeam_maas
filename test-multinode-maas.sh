@@ -8,13 +8,8 @@ if [ $# -ne 1 ]; then
     echo "  $0 <openstack_snap.snap>"
 fi
 
-TEST_SNAP_OPENSTACK=${1}
+TEST_OPENSTACK_CHANNEL=${1}
 TEST_JUJU_CHANNEL=${TEST_JUJU_CHANNEL:-3.6}
-
-if [[ ! -f "${TEST_SNAP_OPENSTACK}" ]]; then
-    echo "${TEST_SNAP_OPENSTACK}: No such file or directory" >&2
-    exit 1
-fi
 
 if [[ -z "$TEST_MAAS_API_KEY" ]];then
     echo "Error: Please define the TEST_MAAS_API_KEY environment variable" >&1
@@ -35,7 +30,7 @@ function run_snap_daemon {
 }
 
 sudo snap install --channel ${TEST_JUJU_CHANNEL} juju
-sudo snap install  --dangerous  ${TEST_SNAP_OPENSTACK}
+sudo snap install --channel  ${TEST_OPENSTACK_CHANNEL} openstack
 sudo snap connect openstack:juju-bin juju:juju-bin
 openstack.sunbeam prepare-node-script --bootstrap | bash -x
 
@@ -51,11 +46,13 @@ run_snap_daemon sunbeam deployment space map space-generic:internal
 run_snap_daemon sunbeam deployment space map space-generic:management
 run_snap_daemon sunbeam deployment space map space-generic:storage
 run_snap_daemon sunbeam deployment space map space-generic:storage-cluster
-run_snap_daemon sunbeam deployment space map space-external:public
+#MG run_snap_daemon sunbeam deployment space map space-external:public
+run_snap_daemon sunbeam deployment space map space-generic:public
 
 run_snap_daemon sunbeam deployment validate
 
-run_snap_daemon sunbeam cluster bootstrap
+run_snap_daemon sunbeam cluster bootstrap -a
+run_snap_daemon sunbeam cluster deploy -a
 
 run_snap_daemon sunbeam cluster list
 

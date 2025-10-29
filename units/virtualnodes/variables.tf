@@ -47,11 +47,6 @@ variable "node_secondary_disk_size" {
   default     = 21474836480  # 20 GiB
 }
 
-variable "nat_net_domain" {
-  description = ""
-  type        = string
-  default     = "nat.maas"
-}
 variable "generic_net_domain" {
   description = ""
   type        = string
@@ -87,12 +82,6 @@ variable "upstream_dns_server" {
   default     = "8.8.8.8"
 }
 
-variable "maas_controller_mac_address1" {
-  description = "MAC address to assign to the maas controller nic in the management network"
-  type        = string
-  default     = "AA:BB:CC:11:11:01"
-}
-
 variable "maas_controller_mac_address2" {
   description = "MAC address"
   type        = string
@@ -109,4 +98,18 @@ variable "maas_controller_rootfs_size" {
   description = "MAAS Controller rootfs disk size (in bytes)"
   type        = number
   default     = 21474836480  # 20 GiB
+}
+
+variable "bridge_name" {
+  description = "Name of the bridge to connect networks to"
+  type        = string
+}
+
+variable "vlan_networks" {
+  description = "VLAN networks from bridge module"
+  type = map(object({
+    interface = string
+    vlan_id   = number
+    network   = string
+  }))
 }

@@ -22,9 +22,21 @@ terraform {
   }
 }
 
+dependency "bridge" {
+  config_path = "../bridge"
+
+  mock_outputs = {
+    bridge_name = "maasbr0"
+    vlan_networks = {}
+  }
+  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+}
+
 inputs = merge(
   include.stack.locals.stack_config,
   {
     storage_pool_path = format("%s/sunbeam_storage", get_env("HOME"))
+    bridge_name       = dependency.bridge.outputs.bridge_name
+    vlan_networks     = dependency.bridge.outputs.vlan_networks
   }
 )
