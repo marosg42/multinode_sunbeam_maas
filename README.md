@@ -1,12 +1,13 @@
 # Multinode Sunbeam MAAS Testing with Testflinger
 
-This is a copy from freyes PR and some modifications. Focus is to run with testflinger using CLI.
+This is a copy from freyes PR and modified to my use case. Focus is to run with testflinger using CLI.
 
-## Divergences from freyes PR
+## How it differs from freyes PR
 
 - not building snap, using existing snap from store
-- only local Tetstflinger deploment
-- not using libvirt netwroks because they use mode nat which always starts a DHCP server which conflicts with MAAS DHCP server
+- only local Tetstflinger deployment
+- not using libvirt networks because they use mode=nat which always starts a DHCP server which conflicts with MAAS DHCP server
+- defning more networks and vlans to enable many network spaces
 
 ## What works
 
