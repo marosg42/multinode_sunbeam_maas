@@ -20,11 +20,6 @@ output "vlan_networks" {
   }
 }
 
-output "libvirt_network_name" {
-  description = "Name of the libvirt network"
-  value       = libvirt_network.bridge_network.name
-}
-
 output "verification_commands" {
   description = "Commands to verify the configuration locally"
   value = <<-EOT

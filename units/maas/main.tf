@@ -336,28 +336,17 @@ resource "null_resource" "tag_ceph_disks" {
   }
 }
 
+# Query network interfaces for Neutron tagging
+data "maas_network_interface_physical" "ens4" {
+  count   = 3
+  machine = maas_machine.node[count.index + 3].id
+  name    = "ens4"
+}
+
 # Tag network interfaces for Neutron
-resource "null_resource" "tag_neutron_interfaces" {
-  count = 3
-  depends_on = [maas_machine.node]
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.ssh_private_key_path)
-    host        = var.maas_controller_ip_address
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "#!/bin/bash",
-      "set -e",
-      "# Get the network interface ID for ens4",
-      "INTERFACE_ID=$(maas admin interfaces read ${maas_machine.node[count.index + 3].id} | jq -r '.[] | select(.name == \"ens4\") | .id')",
-      "# Tag the network interface with 'neutron:physnet1'",
-      "if [ -n \"$INTERFACE_ID\" ]; then",
-      "  maas admin interface add-tag ${maas_machine.node[count.index + 3].id} $INTERFACE_ID tag=neutron:physnet1",
-      "fi"
-    ]
-  }
+resource "maas_network_interface_tag" "neutron" {
+  count        = 3
+  machine      = maas_machine.node[count.index + 3].id
+  interface_id = data.maas_network_interface_physical.ens4[count.index].id
+  tags         = ["neutron:physnet1"]
 }

@@ -22,10 +22,10 @@ resource "null_resource" "bridge" {
       sudo ip link show ${var.bridge_name} >/dev/null 2>&1 || sudo ip link add ${var.bridge_name} type bridge
       # Bring bridge up
       sudo ip link set ${var.bridge_name} up
-      # Remove existing IP if any
-      sudo ip addr flush dev ${var.bridge_name} >/dev/null 2>&1 || true
-      # Add IP address to bridge
-      sudo ip addr add ${var.bridge_base_network} dev ${var.bridge_name}
+      # Add IP address to bridge if not already present
+      if ! sudo ip addr show ${var.bridge_name} | grep -q "${var.bridge_base_network}"; then
+        sudo ip addr add ${var.bridge_base_network} dev ${var.bridge_name}
+      fi
       # Enable IP forwarding
       sudo sysctl -w net.ipv4.ip_forward=1
     EOT
@@ -66,9 +66,10 @@ resource "null_resource" "vlan_interfaces" {
       sudo ip link set ${var.bridge_name}.${each.value.vlan_id} up
       # Attach VLAN interface to its bridge
       sudo ip link set ${var.bridge_name}.${each.value.vlan_id} master vlan${each.value.vlan_id}br
-      # Add IP address to VLAN bridge
-      sudo ip addr flush dev vlan${each.value.vlan_id}br >/dev/null 2>&1 || true
-      sudo ip addr add ${each.value.cidr} dev vlan${each.value.vlan_id}br
+      # Add IP address to VLAN bridge if not already present
+      if ! sudo ip addr show vlan${each.value.vlan_id}br | grep -q "${each.value.cidr}"; then
+        sudo ip addr add ${each.value.cidr} dev vlan${each.value.vlan_id}br
+      fi
     EOT
   }
 }
@@ -108,9 +109,13 @@ resource "null_resource" "nat_vlans" {
 }
 
 # Create libvirt network using the bridge
-resource "libvirt_network" "bridge_network" {
-  name      = "${var.bridge_name}-net"
-  mode      = "bridge"
-  bridge    = var.bridge_name
-  autostart = true
-}
+# resource "libvirt_network" "bridge_network" {
+#   name      = "${var.bridge_name}-net"
+#   mode      = "bridge"
+#   bridge    = var.bridge_name
+#   autostart = true
+
+#   lifecycle {
+#     ignore_changes = [bridge]
+#   }
+# }
