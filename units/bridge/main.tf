@@ -34,10 +34,6 @@ resource "libvirt_network" "main_bridge" {
 
   # Configure the bridge IP
   addresses = [var.bridge_base_network]
-
-  lifecycle {
-    ignore_changes = [bridge]
-  }
 }
 
 # Create VLAN bridge networks
@@ -56,10 +52,6 @@ resource "libvirt_network" "vlan_bridges" {
 
   # Configure the VLAN bridge IP
   addresses = [each.value.cidr]
-
-  lifecycle {
-    ignore_changes = [bridge]
-  }
 }
 
 # Create VLAN interfaces using null_resource as libvirt doesn't support VLAN interfaces directly
