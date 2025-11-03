@@ -74,18 +74,6 @@ resource "null_resource" "vlan_interfaces" {
       sudo ip link set ${var.bridge_name}.${each.value.vlan_id} master vlan${each.value.vlan_id}br
     EOT
   }
-
-  # Cleanup on destroy
-  provisioner "local-exec" {
-    when    = destroy
-    command = <<-EOT
-      set -e
-      # Remove VLAN interface if it exists
-      if sudo ip link show ${var.bridge_name}.${each.value.vlan_id} >/dev/null 2>&1; then
-        sudo ip link delete ${var.bridge_name}.${each.value.vlan_id}
-      fi
-    EOT
-  }
 }
 
 # Setup NAT for bridge base network

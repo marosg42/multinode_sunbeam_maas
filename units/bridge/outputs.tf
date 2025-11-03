@@ -60,3 +60,12 @@ output "verification_commands" {
     ${join("\n    ", [for k, v in var.vlan_networks : "virsh net-info vlan${v.vlan_id}br"])}
   EOT
 }
+
+output "cleanup_commands" {
+  description = "Commands to manually clean up VLAN interfaces if needed"
+  value = <<-EOT
+    If you need to manually clean up VLAN interfaces, run:
+
+    ${join("\n    ", [for k, v in var.vlan_networks : "sudo ip link delete ${var.bridge_name}.${v.vlan_id} 2>/dev/null || true"])}
+  EOT
+}
