@@ -1,3 +1,9 @@
+variable "libvirt_uri" {
+  description = "Libvirt connection URI"
+  type        = string
+  default     = "qemu:///system"
+}
+
 variable "bridge_name" {
   description = "Name of the bridge interface"
   type        = string
