@@ -6,7 +6,7 @@ global_timeout: 21600
 output_timeout: 21600
 reserve_data:
     ssh_keys:
-      - lp:marosg
+      - ${SSH_ID}
     timeout: 21600
 
 test_data:
@@ -17,8 +17,7 @@ test_data:
     scp ./attachments/test/repository.tar.gz "ubuntu@${DEVICE_IP}:"
     if ssh "ubuntu@${DEVICE_IP}" '
         set -ex
-        ssh-import-id lp:marosg
-        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJrAMj1m9OAqBWGpg/jOZZJel/EKGoGziTxspWa2XW7n ubuntu@solqa-test-infra-et3-1" >> /home/ubuntu/.ssh/authorized_keys
+        ssh-import-id ${SSH_ID}
         timeout_loop () {
             local TIMEOUT=90
             while [ "$TIMEOUT" -gt 0 ]; do

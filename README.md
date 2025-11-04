@@ -11,11 +11,22 @@ This is a copy from freyes PR and modified to my use case. Focus is to run with 
 
 ## What works
 
-- `./local_testflinger_deploy.sh` deployes a Testflinger machine and runs terragrunt apply
+- `./local-testflinger.sh <lp/gh-id>` deploys a Testflinger machine and runs terragrunt apply
+  - Requires your Launchpad or GitHub ID (e.g., `lp:username` or `gh:username`)
   - MAAS is installed and configured
   - tags for Sunbeam deployment are created and assigned
 - testflinger job stays in reserved state showing IP to ssh to
 - ssh and running `./runit.sh` will install sunbeam snap and run the deployment
+
+## Usage
+
+```bash
+# Deploy with your Launchpad ID
+./local-testflinger.sh lp:yourusername
+
+# Deploy with GitHub ID
+./local-testflinger.sh gh:yourusername
+```
 
 ## Known Issues
 
