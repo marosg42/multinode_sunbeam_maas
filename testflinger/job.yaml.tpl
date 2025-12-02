@@ -1,5 +1,6 @@
 # -*- mode: yaml -*-
-job_queue: openstack
+# good candidates are beldam rumford hildy maastiff shuckle
+job_queue: beldam 
 provision_data:
   distro: noble
 global_timeout: 21600

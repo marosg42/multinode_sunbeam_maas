@@ -33,26 +33,6 @@ resource "maas_configuration" "upstream_dns" {
   value = var.upstream_dns_server
 }
 
-# NOTE(freyes): this selection is made automatically by MAAS when installed,
-# running this block raises the following error:
-#
-# Error: error creating ubuntu noble: ServerError: 400 Bad Request ({"__all__":
-# ["Boot source selection with this Boot source, Os and Release already
-# exists."]})
-#
-# It's possible to use the `import` block, although there seems to not be a need
-# of making this a managed resource at the moment.
-#
-# data "maas_boot_source" "boot_source" {}
-#
-# resource "maas_boot_source_selection" "amd64" {
-#   boot_source = data.maas_boot_source.boot_source.id
-#   os      = "ubuntu"
-#   release = "noble"
-#   arches  = ["amd64"]
-# }
-
-
 # Generate SSH key pair
 resource "tls_private_key" "ssh_key" {
   algorithm = "RSA"
@@ -269,84 +249,12 @@ resource "maas_tag" "compute" {
   ]
 }
 
-resource "maas_tag" "storage" {
-  name     = "storage"
-  comment  = "Storage nodes for OpenStack"
-  machines = [
-    maas_machine.node[3].id,
-    maas_machine.node[4].id,
-    maas_machine.node[5].id
-  ]
-}
-
-resource "maas_tag" "control" {
-  name     = "control"
-  comment  = "Control plane nodes for OpenStack"
+resource "maas_tag" "juju" {
+  name     = "juju"
+  comment  = "Juju controller nodes"
+  machines = [maas_machine.node[0].id]
+  machines = [maas_machine.node[1].id]
   machines = [maas_machine.node[2].id]
 }
 
-resource "maas_tag" "sunbeam" {
-  name     = "sunbeam"
-  comment  = "Sunbeam deployment nodes"
-  machines = [maas_machine.node[1].id]
-}
 
-resource "maas_tag" "juju_controller" {
-  name     = "juju-controller"
-  comment  = "Juju controller nodes"
-  machines = [maas_machine.node[0].id]
-}
-
-resource "maas_tag" "openstack_mymaas" {
-  name     = "openstack-mymaas"
-  comment  = "Nodes managed by mymaas OpenStack deployment"
-  machines = [
-    maas_machine.node[0].id,
-    maas_machine.node[1].id,
-    maas_machine.node[2].id,
-    maas_machine.node[3].id,
-    maas_machine.node[4].id,
-    maas_machine.node[5].id
-  ]
-}
-
-# Tag block devices for Ceph storage
-resource "null_resource" "tag_ceph_disks" {
-  count = 3
-  depends_on = [maas_machine.node]
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.ssh_private_key_path)
-    host        = var.maas_controller_ip_address
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "#!/bin/bash",
-      "set -e",
-      "# Get the block device ID for /dev/vdb",
-      "BLOCK_DEVICE_ID=$(maas admin block-devices read ${maas_machine.node[count.index + 3].id} | jq -r '.[] | select(.name == \"vdb\") | .id')",
-      "# Tag the block device with 'ceph'",
-      "if [ -n \"$BLOCK_DEVICE_ID\" ]; then",
-      "  maas admin block-device add-tag ${maas_machine.node[count.index + 3].id} $BLOCK_DEVICE_ID tag=ceph",
-      "fi"
-    ]
-  }
-}
-
-# Query network interfaces for Neutron tagging
-data "maas_network_interface_physical" "ens4" {
-  count   = 3
-  machine = maas_machine.node[count.index + 3].id
-  name    = "ens4"
-}
-
-# Tag network interfaces for Neutron
-resource "maas_network_interface_tag" "neutron" {
-  count        = 3
-  machine      = maas_machine.node[count.index + 3].id
-  interface_id = data.maas_network_interface_physical.ens4[count.index].id
-  tags         = ["neutron:physnet1"]
-}
