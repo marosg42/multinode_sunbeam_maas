@@ -252,9 +252,11 @@ resource "maas_tag" "compute" {
 resource "maas_tag" "juju" {
   name     = "juju"
   comment  = "Juju controller nodes"
-  machines = [maas_machine.node[0].id]
-  machines = [maas_machine.node[1].id]
-  machines = [maas_machine.node[2].id]
+  machines = [
+    maas_machine.node[0].id, 
+    maas_machine.node[1].id,
+    maas_machine.node[2].id
+  ]
 }
 
 
