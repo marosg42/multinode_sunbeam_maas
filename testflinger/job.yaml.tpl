@@ -1,6 +1,6 @@
 # -*- mode: yaml -*-
-# good candidates are beldam rumford hildy maastiff shuckle
-job_queue: beldam 
+# virtual-maas contains beldam, rumford, hildy, maastiff and shuckle
+job_queue: virtual-maas
 provision_data:
   distro: noble
 global_timeout: 21600
